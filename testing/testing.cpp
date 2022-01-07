@@ -22,4 +22,4 @@ int main(int argc, char** argv) {
     if(pargs["--no-log"]) {
         logging::file = ""; // ArgParser.h has an built-in logging system, which can be disabled by setting the file to ""
     }
-}
+} //

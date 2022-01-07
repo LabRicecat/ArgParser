@@ -37,15 +37,32 @@ std::string ParsedArgs::operator()(std::string arg) {
             return i.val;
         }
     }
+    LOG("args_get:" << args_get.size())
+    for(auto& i : args_get) {
+        LOG(i.name << " == " << arg)
+        if(i.name == arg || i.hasAlias(arg)) {
+            LOG("retuned i.val (" << i.val << ")")
+            return i.val;
+        }
+    }
     return "";
 }
 
 ParsedArgs::operator bool() {
-    return !failed;
+    return error_code == ArgParserErrors::OK;
+}
+
+bool ParsedArgs::operator==(ArgParserErrors error) {
+    return error_code == error;
+}
+
+std::string ParsedArgs::error() const {
+    return error_msg;
 }
 
 size_t ArgParser::find(std::string name, bool& failed) {
     for(size_t i = 0; i < args.size(); ++i) {
+        //LOG(":" << args[i].name << " == " << name)
         if(args[i].name == name || args[i].hasAlias(name)) {
             failed = false;
             return i;
@@ -55,73 +72,110 @@ size_t ArgParser::find(std::string name, bool& failed) {
     return 0;
 }
 
-ArgParser& ArgParser::addArg(std::string name, bool type, std::vector<std::string> aliase) {
-    args.push_back(Arg{type,name,aliase,false});
+size_t ArgParser::find_next_getarg(bool& failed) {
+    LOG("unusedGetArgs:" << unusedGetArgs)
+    if(unusedGetArgs == 0) {
+        failed = true;
+        return 0;
+    }
+    for(size_t i = 0; i < args.size(); ++i) {
+        if(args[i].type == ARG_GET) {
+            --unusedGetArgs;
+            failed = false;
+            return i;
+        }
+    }
+    failed = true;
+    return 0;
+}
+
+ArgParser& ArgParser::addArg(std::string name, int type, std::vector<std::string> aliase, Arg::Priority prio) {
+    args.push_back(Arg{prio,type,name,aliase,false});
+    return *this;
+}
+ArgParser& ArgParser::enableString(char sym) {
+    strsym = sym;
     return *this;
 }
 
-ParsedArgs ArgParser::parse(std::string args) {
-    if(args == "") {
-        return ParsedArgs({},true);
+ParsedArgs ArgParser::parse(std::vector<std::string> args) {
+    if(args.size() == 0) {
+        return ParsedArgs({},ArgParserErrors::NO_ARGS,"");
     }
-
-    std::vector<std::string> tokens;
-    std::string tmp;
+    unusedGetArgs = 0;
+    for(size_t i = 0; i < this->args.size(); ++i) {
+        if(this->args[i].type == ARG_GET) {
+            ++unusedGetArgs;
+        }
+    }
+    
     for(size_t i = 0; i < args.size(); ++i) {
-        if(args[i] == ' ' && tmp != "") {
-            tokens.push_back(tmp);
-            tmp = "";   
-        }
-        else {
-            tmp += args[i];
-        }
-    }
-    if(tmp != "") {
-        tokens.push_back(tmp);
-    }
-    for(size_t i = 0; i < tokens.size(); ++i) {
-        LOG(tokens[i]);
+        LOG(args[i]);
     }
     bool failed = false;
-    for(size_t i = 0; i < tokens.size(); ++i) {
-        size_t index = find(tokens[i],failed);
-        LOG("find(" << tokens[i] << ") = " << index)
+    for(size_t i = 0; i < args.size(); ++i) {
+        size_t index = find(args[i],failed);
+        LOG("find(" << args[i] << ") = " << index)
         if(failed) {
-            LOG("failed = true")
-            return ParsedArgs({},true);
+            //LOG("failed = true")
+            //return ParsedArgs({},true);
+            index = find_next_getarg(failed);
+            if(failed) {
+                LOG("failed = true")
+                return ParsedArgs({},ArgParserErrors::UNKNOWN_ARG,args[i]);                
+            }
+            else if(this->args[index].type == ARG_GET) {
+                this->args[index].val = args[i];
+            }
         }
-        if(this->args[index].type) {
-            if(i+1 >= tokens.size()) {
+        if(this->args[index].type == ARG_SET) {
+            if(i+1 >= args.size()) {
                 LOG("i+1 >= tokens.size()")
-                return ParsedArgs({},true);
+                return ParsedArgs({},ArgParserErrors::INVALID_SET,this->args[index].name);
             }
 
-            this->args[index].val = tokens[i+1];
-            LOG("this->args[" << index << "] = " << tokens[i+1])
+            this->args[index].val = args[i+1];
+            LOG("this->args[" << index << "] = " << args[i+1])
             ++i;
         }
-        else {
+        else if (this->args[index].type == ARG_TAG) {
             this->args[index].is = true;
         }
     }
 
-    auto ret = ParsedArgs(this->args,false);
+    auto tmpa = this->args;
+    unusedGetArgs = 0;
     for(size_t i = 0; i < this->args.size(); ++i) { //clear
         this->args[i].val = "";
         this->args[i].is = false;
+        if(this->args[i].type = ARG_GET) {
+            ++unusedGetArgs;
+        }
     }
 
-    return ret;
+    // check for unmatching dependencies
+    for(size_t i = 0; i < tmpa.size(); ++i) { //clear
+        if(((tmpa[i].val == "" && tmpa[i].type != ARG_TAG ) || (!tmpa[i].is && tmpa[i].type == ARG_TAG)) && tmpa[i].priority == Arg::Priority::FORCE) {
+            return ParsedArgs(tmpa,ArgParserErrors::UNMATCHED_DEP_FORCE,tmpa[i].name);
+        }
+        else if(((tmpa[i].val != "" && tmpa[i].type != ARG_TAG ) || (tmpa[i].is && tmpa[i].type == ARG_TAG)) && tmpa[i].priority == Arg::Priority::IGNORE) {
+            return ParsedArgs(tmpa,ArgParserErrors::UNMATCHED_DEP_IGNORE,tmpa[i].name);
+        }
+    }
+
+    
+    return ParsedArgs(tmpa,ArgParserErrors::OK,"");
 }
 
 ParsedArgs ArgParser::parse(char** args, int argc) {
-    if(sizeof(args) == 1) {
-        return ParsedArgs({},true);
+    if(argc == 1) {
+        return ParsedArgs({},ArgParserErrors::NO_ARGS,"");
     }
-	std::string par;
-	for(size_t i = 1; i < argc; ++i) {
-		par += std::string(args[i]) + " ";
-	}
-	par.pop_back();
+	std::vector<std::string> par;
+	
+    for(size_t i = 1; i < argc; ++i) {
+        par.push_back(args[i]);
+    }
+
 	return parse(par);
 }

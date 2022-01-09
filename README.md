@@ -47,7 +47,7 @@ int main(int argc, char** argv) {
     //error occured!
     std::cout << pargs.error() << "\n"; //prints the error message
     return -1;
-    //you can chack which error it is by `pargs == ArgParserErrors::<error>`
+    //you can check which error it is by using `pargs == ArgParserErrors::<error>`
   }
 
   if (pargs["--help"]) { // ARG_TAGs use `[]` (return bool)

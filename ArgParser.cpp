@@ -60,10 +60,33 @@ std::string ParsedArgs::error() const {
     return error_msg;
 }
 
+bool ParsedArgs::has(std::string arg_name) {
+    for(auto i : this->args_get) {
+        if(i.name == arg_name) {
+            return true;
+        }
+    }
+
+    for(auto i : this->args_set) {
+        if(i.name == arg_name) {
+            return true;
+        }
+    }
+
+    for(auto i : this->args_tag) {
+        if(i.name == arg_name) {
+            return true;
+        }
+    }
+    
+    return false;
+}
+
 size_t ArgParser::find(std::string name, bool& failed) {
     for(size_t i = 0; i < args.size(); ++i) {
-        //LOG(":" << args[i].name << " == " << name)
+        LOG(":" << args[i].name << " == " << name)
         if(args[i].name == name || args[i].hasAlias(name)) {
+            LOG("found!")
             failed = false;
             return i;
         }
@@ -89,8 +112,8 @@ size_t ArgParser::find_next_getarg(bool& failed) {
     return 0;
 }
 
-ArgParser& ArgParser::addArg(std::string name, int type, std::vector<std::string> aliase, Arg::Priority prio) {
-    args.push_back(Arg{prio,type,name,aliase,false});
+ArgParser& ArgParser::addArg(std::string name, int type, std::vector<std::string> aliase, int fixed_pos, Arg::Priority prio) {
+    args.push_back(Arg{prio,type,name,aliase,false,fixed_pos});
     return *this;
 }
 ArgParser& ArgParser::enableString(char sym) {
@@ -103,16 +126,17 @@ ParsedArgs ArgParser::parse(std::vector<std::string> args) {
         return ParsedArgs({},ArgParserErrors::NO_ARGS,"");
     }
     unusedGetArgs = 0;
+    bool failed = false;
     for(size_t i = 0; i < this->args.size(); ++i) {
         if(this->args[i].type == ARG_GET) {
             ++unusedGetArgs;
         }
     }
-    
+
     for(size_t i = 0; i < args.size(); ++i) {
         LOG(args[i]);
     }
-    bool failed = false;
+    failed = false;
     for(size_t i = 0; i < args.size(); ++i) {
         size_t index = find(args[i],failed);
         LOG("find(" << args[i] << ") = " << index)
@@ -128,6 +152,11 @@ ParsedArgs ArgParser::parse(std::vector<std::string> args) {
                 this->args[index].val = args[i];
             }
         }
+
+        if(this->args[index].fixed_pos != -1 && this->args[index].fixed_pos != i) {
+            return ParsedArgs({},ArgParserErrors::POSITION_MISSMATCH,args[i] + " not at right position!"); 
+        }
+
         if(this->args[index].type == ARG_SET) {
             if(i+1 >= args.size()) {
                 LOG("i+1 >= tokens.size()")
@@ -148,7 +177,7 @@ ParsedArgs ArgParser::parse(std::vector<std::string> args) {
     for(size_t i = 0; i < this->args.size(); ++i) { //clear
         this->args[i].val = "";
         this->args[i].is = false;
-        if(this->args[i].type = ARG_GET) {
+        if(this->args[i].type == ARG_GET) {
             ++unusedGetArgs;
         }
     }

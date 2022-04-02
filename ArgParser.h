@@ -57,6 +57,7 @@ struct Arg
     std::vector<std::string> aliase;
     // internal
     bool is = false;
+    int fixed_pos = -1;
     std::string val = "";
 
     bool hasAlias(std::string name);
@@ -70,7 +71,8 @@ enum class ArgParserErrors
     UNKNOWN_ARG,
     INVALID_SET,
     UNMATCHED_DEP_FORCE,
-    UNMATCHED_DEP_IGNORE
+    UNMATCHED_DEP_IGNORE,
+    POSITION_MISSMATCH
 };
 
 class ParsedArgs
@@ -120,6 +122,9 @@ public:
 
     // returns the error location substring (for debug purpose)
     std::string error() const;
+
+    // returns true if `arg_name` is a set argument
+    bool has(std::string arg_name);
 };
 
 class ArgParser
@@ -133,7 +138,7 @@ class ArgParser
     size_t find_next_getarg(bool& failed);
 
 public:
-    ArgParser &addArg(std::string name, int type, std::vector<std::string> aliase = {}, Arg::Priority priority = Arg::Priority::OPTIONAL);
+    ArgParser &addArg(std::string name, int type, std::vector<std::string> aliase = {},int fixed_pos = -1, Arg::Priority priority = Arg::Priority::OPTIONAL);
     ArgParser &enableString(char sym);
     ParsedArgs parse(std::vector<std::string> args);
     ParsedArgs parse(char **args, int size);

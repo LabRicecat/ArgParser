@@ -1,6 +1,5 @@
 #include "ArgParser.h"
 
-
 bool Arg::hasAlias(std::string name) {
     for(auto& i : aliase) {
         if(i == name) {
@@ -56,25 +55,41 @@ bool ParsedArgs::operator==(ArgParserErrors error) {
     return error_code == error;
 }
 
+bool ParsedArgs::operator!=(ArgParserErrors error) {
+    return error_code != error;
+}
+
 std::string ParsedArgs::error() const {
     return error_msg;
 }
 
 bool ParsedArgs::has(std::string arg_name) {
     for(auto i : this->args_get) {
+<<<<<<< Updated upstream
         if(i.name == arg_name) {
+=======
+        if(i.name == arg_name && i.val != "") {
+>>>>>>> Stashed changes
             return true;
         }
     }
 
     for(auto i : this->args_set) {
+<<<<<<< Updated upstream
         if(i.name == arg_name) {
+=======
+        if(i.name == arg_name && i.val != "") {
+>>>>>>> Stashed changes
             return true;
         }
     }
 
     for(auto i : this->args_tag) {
+<<<<<<< Updated upstream
         if(i.name == arg_name) {
+=======
+        if(i.name == arg_name && i.is) {
+>>>>>>> Stashed changes
             return true;
         }
     }
@@ -82,6 +97,17 @@ bool ParsedArgs::has(std::string arg_name) {
     return false;
 }
 
+<<<<<<< Updated upstream
+=======
+std::vector<std::string> ParsedArgs::get_bin() const {
+    return bin;
+}
+
+bool ParsedArgs::has_bin() const {
+    return bin_filled;
+}
+
+>>>>>>> Stashed changes
 size_t ArgParser::find(std::string name, bool& failed) {
     for(size_t i = 0; i < args.size(); ++i) {
         LOG(":" << args[i].name << " == " << name)
@@ -102,7 +128,7 @@ size_t ArgParser::find_next_getarg(bool& failed) {
         return 0;
     }
     for(size_t i = 0; i < args.size(); ++i) {
-        if(args[i].type == ARG_GET) {
+        if(args[i].type == ARG_GET && args[i].val == "") {
             --unusedGetArgs;
             failed = false;
             return i;
@@ -118,6 +144,11 @@ ArgParser& ArgParser::addArg(std::string name, int type, std::vector<std::string
 }
 ArgParser& ArgParser::enableString(char sym) {
     strsym = sym;
+    return *this;
+}
+
+ArgParser& ArgParser::setbin() {
+    has_bin = true;
     return *this;
 }
 
@@ -145,14 +176,26 @@ ParsedArgs ArgParser::parse(std::vector<std::string> args) {
             //return ParsedArgs({},true);
             index = find_next_getarg(failed);
             if(failed) {
+                if(has_bin) {
+                    LOG("filling bin..")
+                    for(size_t j = i; j < args.size(); ++j) {
+                        bin.push_back(args[j]);
+                    }
+                    break;
+                }
+
                 LOG("failed = true")
-                return ParsedArgs({},ArgParserErrors::UNKNOWN_ARG,args[i]);                
+                return ParsedArgs({},ArgParserErrors::UNKNOWN_ARG,args[i]);
             }
             else if(this->args[index].type == ARG_GET) {
                 this->args[index].val = args[i];
             }
         }
 
+<<<<<<< Updated upstream
+=======
+        LOG(this->args[index].fixed_pos << " != -1 && " << this->args[index].fixed_pos <<" != " <<i)
+>>>>>>> Stashed changes
         if(this->args[index].fixed_pos != -1 && this->args[index].fixed_pos != i) {
             return ParsedArgs({},ArgParserErrors::POSITION_MISSMATCH,args[i] + " not at right position!"); 
         }
@@ -193,7 +236,7 @@ ParsedArgs ArgParser::parse(std::vector<std::string> args) {
     }
 
     
-    return ParsedArgs(tmpa,ArgParserErrors::OK,"");
+    return ParsedArgs(tmpa,ArgParserErrors::OK,"",bin);
 }
 
 ParsedArgs ArgParser::parse(char** args, int argc) {

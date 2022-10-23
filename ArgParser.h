@@ -82,8 +82,11 @@ class ParsedArgs
     std::vector<Arg> args_get;
     ArgParserErrors error_code = ArgParserErrors::OK;
     std::string error_msg = "";
+
+    std::vector<std::string> bin;
+    bool bin_filled = false;
 public:
-    ParsedArgs(std::vector<Arg> args, ArgParserErrors error_code, std::string error_msg) 
+    ParsedArgs(std::vector<Arg> args, ArgParserErrors error_code, std::string error_msg, std::vector<std::string> bin = {}) 
     {
         if (!args.empty()) 
         {
@@ -105,6 +108,8 @@ public:
         }
         this->error_msg = error_msg;
         this->error_code = error_code;
+        this->bin = bin;
+        this->bin_filled = !bin.empty();
     }
 
     // returns args(tag)
@@ -119,12 +124,20 @@ public:
 
     // checks for error_code == error
     bool operator==(ArgParserErrors error);
+    bool operator!=(ArgParserErrors error);
 
     // returns the error location substring (for debug purpose)
     std::string error() const;
 
     // returns true if `arg_name` is a set argument
     bool has(std::string arg_name);
+<<<<<<< Updated upstream
+=======
+
+    std::vector<std::string> get_bin() const;
+
+    bool has_bin() const;
+>>>>>>> Stashed changes
 };
 
 class ArgParser
@@ -132,6 +145,8 @@ class ArgParser
     char strsym = ' ';
     uint32_t unusedGetArgs = 0;
     std::vector<Arg> args;
+    bool has_bin = false;
+    std::vector<std::string> bin;
 
     size_t find(std::string name, bool &failed);
 
@@ -140,6 +155,7 @@ class ArgParser
 public:
     ArgParser &addArg(std::string name, int type, std::vector<std::string> aliase = {},int fixed_pos = -1, Arg::Priority priority = Arg::Priority::OPTIONAL);
     ArgParser &enableString(char sym);
+    ArgParser &setbin();
     ParsedArgs parse(std::vector<std::string> args);
     ParsedArgs parse(char **args, int size);
 };

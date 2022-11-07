@@ -131,13 +131,10 @@ public:
 
     // returns true if `arg_name` is a set argument
     bool has(std::string arg_name);
-<<<<<<< Updated upstream
-=======
 
     std::vector<std::string> get_bin() const;
 
     bool has_bin() const;
->>>>>>> Stashed changes
 };
 
 class ArgParser

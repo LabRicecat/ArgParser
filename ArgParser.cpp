@@ -176,7 +176,7 @@ ParsedArgs ArgParser::parse(std::vector<std::string> args) {
                 this->args[index].val = args[i];
             }
         }
-        
+
         if(this->args[index].fixed_pos != -1 && this->args[index].fixed_pos != i) {
             return ParsedArgs({},ArgParserErrors::POSITION_MISSMATCH,args[i] + " not at right position!"); 
         }

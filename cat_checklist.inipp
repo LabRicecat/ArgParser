@@ -1,0 +1,7 @@
+[Info]
+name="ArgParser"
+version="1.0.5"
+
+[Download]
+dependencies=[]
+files=["ArgParser.h","ArgParser.cpp"]

@@ -65,31 +65,19 @@ std::string ParsedArgs::error() const {
 
 bool ParsedArgs::has(std::string arg_name) {
     for(auto i : this->args_get) {
-<<<<<<< Updated upstream
-        if(i.name == arg_name) {
-=======
         if(i.name == arg_name && i.val != "") {
->>>>>>> Stashed changes
             return true;
         }
     }
 
     for(auto i : this->args_set) {
-<<<<<<< Updated upstream
-        if(i.name == arg_name) {
-=======
         if(i.name == arg_name && i.val != "") {
->>>>>>> Stashed changes
             return true;
         }
     }
 
     for(auto i : this->args_tag) {
-<<<<<<< Updated upstream
-        if(i.name == arg_name) {
-=======
         if(i.name == arg_name && i.is) {
->>>>>>> Stashed changes
             return true;
         }
     }
@@ -97,8 +85,6 @@ bool ParsedArgs::has(std::string arg_name) {
     return false;
 }
 
-<<<<<<< Updated upstream
-=======
 std::vector<std::string> ParsedArgs::get_bin() const {
     return bin;
 }
@@ -107,7 +93,6 @@ bool ParsedArgs::has_bin() const {
     return bin_filled;
 }
 
->>>>>>> Stashed changes
 size_t ArgParser::find(std::string name, bool& failed) {
     for(size_t i = 0; i < args.size(); ++i) {
         LOG(":" << args[i].name << " == " << name)
@@ -191,11 +176,7 @@ ParsedArgs ArgParser::parse(std::vector<std::string> args) {
                 this->args[index].val = args[i];
             }
         }
-
-<<<<<<< Updated upstream
-=======
-        LOG(this->args[index].fixed_pos << " != -1 && " << this->args[index].fixed_pos <<" != " <<i)
->>>>>>> Stashed changes
+        
         if(this->args[index].fixed_pos != -1 && this->args[index].fixed_pos != i) {
             return ParsedArgs({},ArgParserErrors::POSITION_MISSMATCH,args[i] + " not at right position!"); 
         }

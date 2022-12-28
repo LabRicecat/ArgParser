@@ -10,38 +10,8 @@
 #define ARG_SET 1
 #define ARG_TAG 0
 
-#ifndef ARG_PARSER_NO_LOG //define this before including to stop any logging process. Usefull when you have your own logging library.
-namespace logging
-{
-    inline std::string file = "Debug.log";
-}
-
-#define CLEAR_LOG                                              \
-    {                                                          \
-        if (logging::file != "")                               \
-        {                                                      \
-            std::ofstream out(logging::file, std::ios::trunc); \
-            out.close();                                       \
-        }                                                      \
-    }
-#define LOG(message)                                                         \
-    {                                                                        \
-        if (logging::file != "")                                             \
-        {                                                                    \
-            std::ofstream out(logging::file, std::ios::ate | std::ios::app); \
-            out << message << "\n";                                          \
-            out.close();                                                     \
-        }                                                                    \
-    }
-#else
-#define CLEAR_LOG
-#define LOG(message)
-#endif
-
-struct Arg
-{
-    enum class Priority
-    {
+struct Arg {
+    enum class Priority {
         OPTIONAL,
         FORCE,
         IGNORE
@@ -60,11 +30,14 @@ struct Arg
     int fixed_pos = -1;
     std::string val = "";
 
-    bool hasAlias(std::string name);
+    bool hasAlias(std::string name) {
+        for(auto& i : aliase)
+            if(i == name) return true;
+        return false;
+    }
 };
 
-enum class ArgParserErrors 
-{
+enum class ArgParserErrors {
     OK,
     UNKNOWN,
     NO_ARGS,
@@ -75,8 +48,7 @@ enum class ArgParserErrors
     POSITION_MISSMATCH
 };
 
-class ParsedArgs
-{
+class ParsedArgs {
     std::vector<Arg> args_tag;
     std::vector<Arg> args_set;
     std::vector<Arg> args_get;
@@ -86,24 +58,15 @@ class ParsedArgs
     std::vector<std::string> bin;
     bool bin_filled = false;
 public:
-    ParsedArgs(std::vector<Arg> args, ArgParserErrors error_code, std::string error_msg, std::vector<std::string> bin = {}) 
-    {
-        if (!args.empty()) 
-        {
-            for (auto &i : args) 
-            {
-                if (i.type == ARG_SET) 
-                {
+    ParsedArgs(std::vector<Arg> args, ArgParserErrors error_code, std::string error_msg, std::vector<std::string> bin = {}) {
+        if (!args.empty()) {
+            for (auto &i : args) {
+                if (i.type == ARG_SET)
                     args_set.push_back(i);
-                }
-                else if (i.type == ARG_TAG) 
-                {
+                else if (i.type == ARG_TAG)
                     args_tag.push_back(i);
-                }
-                else 
-                {
+                else
                     args_get.push_back(i);
-                }
             }
         }
         this->error_msg = error_msg;
@@ -113,48 +76,171 @@ public:
     }
 
     // returns args(tag)
-    bool operator[](const char *);
-    bool operator[](std::string arg);
+    bool operator[](const char* arg) {
+        for(auto& i : args_tag)
+            if(i.name == arg || i.hasAlias(arg)) return i.is;
+        return false;
+    }
+    bool operator[](std::string arg) {
+        return operator[](arg.c_str());
+    }
 
-    // returns args(set)
-    std::string operator()(std::string arg);
+    // returns args(set and get)
+    std::string operator()(std::string arg) {
+        for(auto& i : args_set)
+            if(i.name == arg || i.hasAlias(arg)) return i.val;
+        for(auto& i : args_get) 
+            if(i.name == arg || i.hasAlias(arg)) return i.val; 
+        return "";
+    }
 
-    // returns error_code == OK
-    operator bool();
+    operator bool() { return error_code == ArgParserErrors::OK; }
 
-    // checks for error_code == error
-    bool operator==(ArgParserErrors error);
-    bool operator!=(ArgParserErrors error);
+    bool operator==(ArgParserErrors error) { return error_code == error; }
+    bool operator!=(ArgParserErrors error) { return error_code != error; }
 
-    // returns the error location substring (for debug purpose)
-    std::string error() const;
+    // returns the error message 
+    std::string error() const { return error_msg; }
 
-    // returns true if `arg_name` is a set argument
-    bool has(std::string arg_name);
+    // returns true if `arg_name` is an argument that is set
+    bool has(std::string arg_name) {
+        for(auto i : this->args_get)
+            if(i.name == arg_name && i.val != "") return true;
 
-    std::vector<std::string> get_bin() const;
+        for(auto i : this->args_set) 
+            if(i.name == arg_name && i.val != "") return true;
 
-    bool has_bin() const;
+        for(auto i : this->args_tag) 
+            if(i.name == arg_name && i.is) return true;
+        
+        return false;
+    }
+
+    std::vector<std::string> get_bin() const { return bin; }
+
+    bool has_bin() const { return bin_filled; }
 };
 
-class ArgParser
-{
+class ArgParser {
     char strsym = ' ';
     uint32_t unusedGetArgs = 0;
     std::vector<Arg> args;
     bool has_bin = false;
     std::vector<std::string> bin;
 
-    size_t find(std::string name, bool &failed);
+    size_t find(std::string name, bool &failed) {
+        for(size_t i = 0; i < args.size(); ++i)
+            if(args[i].name == name || args[i].hasAlias(name)) {
+                failed = false;
+                return i;
+            }
+        failed = true;
+        return 0;
+    }
 
-    size_t find_next_getarg(bool& failed);
+    size_t find_next_getarg(bool& failed) {
+        if(unusedGetArgs == 0) {
+            failed = true;
+            return 0;
+        }
+        for(size_t i = 0; i < args.size(); ++i)
+            if(args[i].type == ARG_GET && args[i].val == "") {
+                --unusedGetArgs;
+                failed = false;
+                return i;
+            }
+        failed = true;
+        return 0;
+    }
 
 public:
-    ArgParser &addArg(std::string name, int type, std::vector<std::string> aliase = {},int fixed_pos = -1, Arg::Priority priority = Arg::Priority::OPTIONAL);
-    ArgParser &enableString(char sym);
-    ArgParser &setbin();
-    ParsedArgs parse(std::vector<std::string> args);
-    ParsedArgs parse(char **args, int size);
+    ArgParser &addArg(std::string name, int type, std::vector<std::string> aliase = {},int fixed_pos = -1, Arg::Priority priority = Arg::Priority::OPTIONAL) {
+        args.push_back(Arg{priority,type,name,aliase,false,fixed_pos});
+        return *this;
+    }
+    ArgParser &enableString(char sym) {
+        strsym = sym;
+        return *this;
+    }
+    ArgParser &setbin() {
+        has_bin = true;
+        return *this;
+    }
+    ParsedArgs parse(char **argv, int argc) {
+        if(argc == 1) {
+            return ParsedArgs({},ArgParserErrors::NO_ARGS,"");
+        }
+
+        std::vector<std::string> par;
+        for(size_t i = 1; i < argc; ++i) {
+            par.push_back(argv[i]);
+        }
+
+        return parse(par);
+    }
+    ParsedArgs parse(std::vector<std::string> args) {
+        if(args.size() == 0) return ParsedArgs({},ArgParserErrors::NO_ARGS,"");
+
+        unusedGetArgs = 0;
+        bool failed = false;
+        for(size_t i = 0; i < this->args.size(); ++i)
+            if(this->args[i].type == ARG_GET) ++unusedGetArgs;
+
+        for(size_t i = 0; i < args.size(); ++i) {
+            size_t index = find(args[i],failed);
+            if(failed) {
+                index = find_next_getarg(failed);
+                if(failed) {
+                    if(has_bin) {
+                        for(size_t j = i; j < args.size(); ++j) bin.push_back(args[j]);
+                        break;
+                    }
+                    return ParsedArgs({},ArgParserErrors::UNKNOWN_ARG,args[i]);
+                }
+                else if(this->args[index].type == ARG_GET) {
+                    this->args[index].val = args[i];
+                }
+            }
+
+            if(this->args[index].fixed_pos != -1 && this->args[index].fixed_pos != i) {
+                return ParsedArgs({},ArgParserErrors::POSITION_MISSMATCH,args[i] + " not at right position!"); 
+            }
+
+            if(this->args[index].type == ARG_SET) {
+                if(i+1 >= args.size()) {
+                    return ParsedArgs({},ArgParserErrors::INVALID_SET,this->args[index].name);
+                }
+
+                this->args[index].val = args[i+1];
+                ++i;
+            }
+            else if (this->args[index].type == ARG_TAG) {
+                this->args[index].is = true;
+            }
+        }
+
+        auto tmpa = this->args;
+        unusedGetArgs = 0;
+        for(size_t i = 0; i < this->args.size(); ++i) { //clear
+            this->args[i].val = "";
+            this->args[i].is = false;
+            if(this->args[i].type == ARG_GET) {
+                ++unusedGetArgs;
+            }
+        }
+
+        // check for unmatching dependencies
+        for(size_t i = 0; i < tmpa.size(); ++i) {
+            if(((tmpa[i].val == "" && tmpa[i].type != ARG_TAG ) || (!tmpa[i].is && tmpa[i].type == ARG_TAG)) && tmpa[i].priority == Arg::Priority::FORCE) {
+                return ParsedArgs(tmpa,ArgParserErrors::UNMATCHED_DEP_FORCE,tmpa[i].name);
+            }
+            else if(((tmpa[i].val != "" && tmpa[i].type != ARG_TAG ) || (tmpa[i].is && tmpa[i].type == ARG_TAG)) && tmpa[i].priority == Arg::Priority::IGNORE) {
+                return ParsedArgs(tmpa,ArgParserErrors::UNMATCHED_DEP_IGNORE,tmpa[i].name);
+            }
+        }
+
+        return ParsedArgs(tmpa,ArgParserErrors::OK,"",bin);
+    }
 };
 
 #endif

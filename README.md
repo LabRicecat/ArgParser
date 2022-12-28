@@ -31,11 +31,9 @@ The `-` or `--` have to be added to the name manually, else they can be called w
 
 Here an example:
 ```cpp
-//#define ARG_PARSER_NO_LOG // would disable every logging from the arg parser.
 #include "ArgParser.h"
 
 int main(int argc, char** argv) {
-  CLEAR_LOG //clears the logs of the arg parser
   ArgParser parser = ArgParser()
     .addArg("--help",ARG_TAG,{"--h"})
     .addArg("-print",ARG_GET,{"-p"},Arg::Priority::FORCE)

@@ -1,6 +1,3 @@
-
 *.log
-testing/main
-testing/main.cpp
-testing/testing.cpp
-testing/testing.cpp
+testing/
+.vscode/

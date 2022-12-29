@@ -228,6 +228,8 @@ public:
                 ++unusedGetArgs;
             }
         }
+        auto bin_copy = bin;
+        bin = {};
 
         // check for unmatching dependencies
         for(size_t i = 0; i < tmpa.size(); ++i) {
@@ -239,7 +241,7 @@ public:
             }
         }
 
-        return ParsedArgs(tmpa,ArgParserErrors::OK,"",bin);
+        return ParsedArgs(tmpa,ArgParserErrors::OK,"",bin_copy);
     }
 };
 

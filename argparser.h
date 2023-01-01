@@ -30,7 +30,7 @@ struct Arg {
     int fixed_pos = -1;
     std::string val = "";
 
-    bool hasAlias(std::string name) {
+    inline bool hasAlias(std::string name) {
         for(auto& i : aliase)
             if(i == name) return true;
         return false;
@@ -76,17 +76,17 @@ public:
     }
 
     // returns args(tag)
-    bool operator[](const char* arg) {
+    inline bool operator[](const char* arg) {
         for(auto& i : args_tag)
             if(i.name == arg || i.hasAlias(arg)) return i.is;
         return false;
     }
-    bool operator[](std::string arg) {
+    inline bool operator[](std::string arg) {
         return operator[](arg.c_str());
     }
 
     // returns args(set and get)
-    std::string operator()(std::string arg) {
+    inline std::string operator()(std::string arg) {
         for(auto& i : args_set)
             if(i.name == arg || i.hasAlias(arg)) return i.val;
         for(auto& i : args_get) 
@@ -94,16 +94,16 @@ public:
         return "";
     }
 
-    operator bool() { return error_code == ArgParserErrors::OK; }
+    inline operator bool() { return error_code == ArgParserErrors::OK; }
 
-    bool operator==(ArgParserErrors error) { return error_code == error; }
-    bool operator!=(ArgParserErrors error) { return error_code != error; }
+    inline bool operator==(ArgParserErrors error) { return error_code == error; }
+    inline bool operator!=(ArgParserErrors error) { return error_code != error; }
 
     // returns the error message 
-    std::string error() const { return error_msg; }
+    inline std::string error() const { return error_msg; }
 
     // returns true if `arg_name` is an argument that is set
-    bool has(std::string arg_name) {
+    inline bool has(std::string arg_name) {
         for(auto i : this->args_get)
             if(i.name == arg_name && i.val != "") return true;
 
@@ -116,9 +116,9 @@ public:
         return false;
     }
 
-    std::vector<std::string> get_bin() const { return bin; }
+    inline std::vector<std::string> get_bin() const { return bin; }
 
-    bool has_bin() const { return bin_filled; }
+    inline bool has_bin() const { return bin_filled; }
 };
 
 class ArgParser {
@@ -128,7 +128,7 @@ class ArgParser {
     bool has_bin = false;
     std::vector<std::string> bin;
 
-    size_t find(std::string name, bool &failed) {
+    inline size_t find(std::string name, bool &failed) {
         for(size_t i = 0; i < args.size(); ++i)
             if(args[i].name == name || args[i].hasAlias(name)) {
                 failed = false;
@@ -138,7 +138,7 @@ class ArgParser {
         return 0;
     }
 
-    size_t find_next_getarg(bool& failed) {
+    inline size_t find_next_getarg(bool& failed) {
         if(unusedGetArgs == 0) {
             failed = true;
             return 0;
@@ -154,19 +154,19 @@ class ArgParser {
     }
 
 public:
-    ArgParser &addArg(std::string name, int type, std::vector<std::string> aliase = {},int fixed_pos = -1, Arg::Priority priority = Arg::Priority::OPTIONAL) {
+    inline ArgParser &addArg(std::string name, int type, std::vector<std::string> aliase = {},int fixed_pos = -1, Arg::Priority priority = Arg::Priority::OPTIONAL) {
         args.push_back(Arg{priority,type,name,aliase,false,fixed_pos});
         return *this;
     }
-    ArgParser &enableString(char sym) {
+    inline ArgParser &enableString(char sym) {
         strsym = sym;
         return *this;
     }
-    ArgParser &setbin() {
+    inline ArgParser &setbin() {
         has_bin = true;
         return *this;
     }
-    ParsedArgs parse(char **argv, int argc) {
+    inline ParsedArgs parse(char **argv, int argc) {
         if(argc == 1) {
             return ParsedArgs({},ArgParserErrors::NO_ARGS,"");
         }
@@ -178,7 +178,7 @@ public:
 
         return parse(par);
     }
-    ParsedArgs parse(std::vector<std::string> args) {
+    inline ParsedArgs parse(std::vector<std::string> args) {
         if(args.size() == 0) return ParsedArgs({},ArgParserErrors::NO_ARGS,"");
 
         unusedGetArgs = 0;

@@ -1,7 +1,7 @@
 # ArgParser v.1.1.1
 A simple argument parser API for and in C++
 
-Simply include the `ArgParser.h` file.
+Simply include the `argparser.h` file.
 
 Create an new ArgParser using
 ```cpp
@@ -18,7 +18,7 @@ The paramethers are:  <br>
 This sould look like this:
 ```cpp
 ArgParser parser = ArgParser()
-  .addArg(<name>,<type>,<aliase>,<priority>)
+  .addArg(<name>,<type>,<aliase>,<position>,<priority>)
   .addArg(...)
   ...
   ;
@@ -36,7 +36,7 @@ Here an example:
 int main(int argc, char** argv) {
   ArgParser parser = ArgParser()
     .addArg("--help",ARG_TAG,{"--h"})
-    .addArg("-print",ARG_GET,{"-p"},Arg::Priority::FORCE)
+    .addArg("-print",ARG_GET,{"-p"},-1,Arg::Priority::FORCE)
     .addArg("-set",ARG_SET,{"-s"});
     
   ParsedArgs pargs = parser.parse(argv,argc);

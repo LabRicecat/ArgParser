@@ -1,4 +1,4 @@
-# ArgParser v.1.1.1
+# ArgParser v.1.1.2
 A simple argument parser API for and in C++
 
 Simply include the `argparser.h` file.

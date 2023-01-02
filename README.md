@@ -31,7 +31,7 @@ The `-` or `--` have to be added to the name manually, else they can be called w
 
 Here an example:
 ```cpp
-#include "ArgParser.h"
+#include "argparser.h"
 
 int main(int argc, char** argv) {
   ArgParser parser = ArgParser()
